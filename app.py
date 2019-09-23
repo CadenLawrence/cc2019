@@ -11,19 +11,21 @@ mongo = PyMongo(app)
 @app.route('/')
 def index():
     if 'username' in session:
-        return render_template('authorized.html')
-
+        return 'hello '+ session['firstname'] +' '+ session['lastname'] + '. Email: ' + session['email'] +' '+ render_template('authorized.html')
     return render_template('index.html')
     
 
 @app.route('/login', methods=['POST'])
 def login():
     users = mongo.db.users
-    login_user = users.find_one({'name': request.form['username']})
+    login_user = users.find_one({'name':request.form['username']})
 
     if login_user:
         if bcrypt.hashpw(request.form['pass'].encode('utf-8'), login_user['password']) == login_user['password']:
             session['username'] = request.form['username']
+            session['firstname'] = login_user['firstname']
+            session['lastname'] = login_user['lastname']
+            session['email'] = login_user['email']
             return redirect(url_for('index'))
 
     return 'Invalid username or password'
@@ -36,8 +38,11 @@ def register():
 
         if existing_user is None:
             hashpass = bcrypt.hashpw(request.form['pass'].encode('utf-8'), bcrypt.gensalt())
-            users.insert({'name':request.form['username'], 'password': hashpass})
-            session['username'] =  request.form['username']
+            users.insert({'name':request.form['username'], 'password': hashpass,'email':request.form['email'],'firstname':request.form['firstname'],'lastname':request.form['lastname']})
+            session['username'] = request.form['username']
+            session['firstname'] = request.form['firstname']
+            session['lastname'] = request.form['lastname']
+            session['email'] = request.form['email']
             return redirect(url_for('index'))
 
         return 'That username already exists!'
@@ -50,4 +55,4 @@ def logout():
 
 if __name__ == '__main__':
 
-    app.run(debug=True)
+    app.run(host="0.0.0.0", port=80)
